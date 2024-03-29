@@ -1,0 +1,19 @@
+FROM python:3.10-alpine
+
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    linux-headers
+
+ENV SIGN_KEY_USERMANAGER_ADMIN 6bf8fc1cd839b1acc48d4c5b3898d529
+ENV SIGN_KEY_EXPORTER 6bf8fc1cd839b1acc48d4c5b3898d523
+ENV HOST slamanager
+ENV PORT 7000
+
+WORKDIR /Slamanager
+
+COPY . .
+
+RUN pip install -r requirements.txt
+
+CMD ["python", "slamanager.py"]

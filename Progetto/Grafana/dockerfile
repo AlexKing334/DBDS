@@ -1,0 +1,13 @@
+# Usa l'immagine ufficiale di Grafana come base
+FROM grafana/grafana-enterprise:latest
+
+# Copia i file di configurazione e dashboard nella directory corretta dell'immagine
+COPY ./provisioning/datasources /etc/grafana/provisioning/datasources
+COPY ./provisioning/dashboards/main.yaml /etc/grafana/provisioning/dashboards/main.yaml
+COPY ./dashboards /var/lib/grafana/dashboards
+
+# Imposta variabili d'ambiente personalizzate nel Dockerfile
+ENV GF_SECURITY_ADMIN_PASSWORD=admin
+ENV GF_SECURITY_ALLOW_EMBEDDING=true
+ENV GF_SERVER_ROOT_URL=http://my.grafana.server/
+ENV GF_INSTALL_PLUGINS=grafana-clock-panel

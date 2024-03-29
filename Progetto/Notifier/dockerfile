@@ -1,0 +1,21 @@
+FROM python:3.10-alpine
+
+# Aggiungi i pacchetti necessari per la compilazione di psutil
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    linux-headers
+
+ENV SIGN_KEY_CONSUMER 6bf8fc1cd839b1acc48d4c5b3898d526
+ENV SIGN_KEY_NOTIFIER 6bf8fc1cd839b1acc48d4c5b3898d525
+ENV PORT 4000
+ENV HOST notifier
+
+WORKDIR /Notifier
+
+COPY . .
+
+# Installa le dipendenze
+RUN pip install -r requirements.txt
+
+CMD ["python", "Notifier.py"]

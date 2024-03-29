@@ -1,0 +1,20 @@
+FROM python:3.10-alpine
+
+# Aggiungi i pacchetti necessari per la compilazione di psutil
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    linux-headers
+
+ENV PORT 2000
+ENV HOST exporter
+ENV SIGN_KEY_EXPORTER 6bf8fc1cd839b1acc48d4c5b3898d523
+
+WORKDIR /Exporter
+
+COPY . .
+
+# Installa le dipendenze
+RUN pip install -r requirements.txt
+
+CMD ["python", "exporter.py"]

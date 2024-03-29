@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: usermanager-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: usermanager
+  template:
+    metadata:
+      labels:
+        app: usermanager
+    spec:
+      initContainers:
+      - name: wait-db
+        image: busybox:1.31
+        command: ['sh', '-c', 'until nc -zv db 3306; do echo "Waiting for MySQL"; sleep 5; done;']
+      hostname: usermanager
+      containers:
+        - name: usermanager
+          image: progetto-usermanager:latest
+          env:
+            - name: PORT
+              value: "5000"
+            - name: HOST
+              value: "usermanager"
+            - name: SIGN_KEY_USERMANAGER
+              value: "6bf8fc1cd839b1acc48d4c5b3898d528"
+            - name: SIGN_KEY_USERMANAGER_ADMIN
+              value: "6bf8fc1cd839b1acc48d4c5b3898d529"
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: usermanager
+spec:
+  selector:
+    app: usermanager
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+      nodePort: 30002
+  type: NodePort
+
+

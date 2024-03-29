@@ -1,0 +1,8 @@
+confluent_kafka==2.3.0
+Flask==3.0.0
+kafka_python==2.0.2
+psutil==5.9.5
+pyOpenSSL==23.3.0
+Requests==2.31.0
+urllib3==1.26.18
+tenacity==8.2.3

@@ -1,0 +1,20 @@
+FROM python:3.10-alpine
+
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    linux-headers \
+    librdkafka-dev
+
+ENV PORT 1000
+ENV USER himym_mosby_ted
+ENV PSW RuoHWQ46o1
+ENV HOST producer
+
+WORKDIR /Producer
+
+COPY . .
+
+RUN pip install -r requirements.txt
+
+CMD ["python", "producer.py"]

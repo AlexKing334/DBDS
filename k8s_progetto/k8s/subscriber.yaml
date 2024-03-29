@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: subscriber-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: subscriber
+  template:
+    metadata:
+      labels:
+        app: subscriber
+    spec:
+      initContainers:
+      - name: wait-db
+        image: busybox:1.31
+        command: ['sh', '-c', 'until nc -zv db 3306 && nc -zv usermanager 5000; do echo "Waiting for MySQL and usermanager"; sleep 5; done;']
+      hostname: subscriber
+      containers:
+        - name: subscriber
+          image: progetto-subscriber:latest
+          env:
+            - name: PORT
+              value: "8001"
+            - name: HOST
+              value: "subscriber"
+            - name: SIGN_KEY_USERMANAGER
+              value: "6bf8fc1cd839b1acc48d4c5b3898d528"
+            - name: SIGN_KEY_NOTIFIER
+              value: "6bf8fc1cd839b1acc48d4c5b3898d525"
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: subscriber
+spec:
+  selector:
+    app: subscriber
+  ports:
+    - protocol: TCP
+      port: 8001
+      targetPort: 8001
+      nodePort: 30003
+  type: NodePort
+
+

@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slamanager-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: slamanager
+  template:
+    metadata:
+      labels:
+        app: slamanager
+    spec:
+      initContainers:
+      - name: wait-db
+        image: busybox:1.31
+        command: ['sh', '-c', 'until nc -zv db 3306 && nc -zv exporter 2000; do echo "Waiting for MySQL and exporter"; sleep 5; done;']
+      hostname: slamanager
+      containers:
+        - name: slamanager
+          image: progetto-slamanager:latest
+          env:
+            - name: PORT
+              value: "7000"
+            - name: HOST
+              value: "slamanager"
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 7000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: slamanager
+spec:
+  selector:
+    app: slamanager
+  ports:
+    - protocol: TCP
+      port: 7000
+      targetPort: 7000
+      nodePort: 30008
+  type: NodePort
+
+

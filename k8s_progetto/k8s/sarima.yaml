@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sarima-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sarima
+  template:
+    metadata:
+      labels:
+        app: sarima
+    spec:
+      initContainers:
+      - name: wait-slamanager
+        image: busybox:1.31
+        command: ['sh', '-c', 'until nc -zv slamanager 7000; do echo "Waiting for slamanager"; sleep 5; done;']
+      hostname: sarima
+      containers:
+        - name: sarima
+          image: progetto-sarima:latest
+          env:
+            - name: PORT
+              value: "5555"
+            - name: HOST
+              value: "sarima"
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5555
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sarima
+spec:
+  selector:
+    app: sarima
+  ports:
+    - protocol: TCP
+      port: 5555
+      targetPort: 5555
+      nodePort: 30007
+  type: NodePort
+
+

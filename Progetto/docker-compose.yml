@@ -1,0 +1,213 @@
+version: '3'
+services:
+  prometheus:
+    image: prom/prometheus
+    restart: unless-stopped
+    volumes:
+      - prometheus-data:/prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./cert.pem:/etc/prometheus/cert.pem
+      - ./key.pem:/etc/prometheus/key.pem
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
+
+  grafana:
+    build:
+      context: ./Grafana
+      dockerfile: Dockerfile
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+
+  kafka:
+    container_name: kafka
+    image: bitnami/kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    volumes:
+      - "kafka_data:/bitnami"
+    environment:
+      - KAFKA_CFG_NODE_ID=1001
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1001@kafka:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+  
+  create-topic:
+    image: 'bitnami/kafka:latest'
+    depends_on:
+      - kafka
+    entrypoint: ['/bin/bash', '-c']
+    command:
+    - |
+      echo "Creating topic..."
+      sleep 15
+      kafka-topics.sh --create --bootstrap-server kafka:9092 --replication-factor 1 --topic SICILIA --config retention.ms=1800000
+      kafka-topics.sh --create --bootstrap-server kafka:9092 --replication-factor 1 --topic LAZIO --config retention.ms=1800000
+  
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    container_name: kafka-ui
+    ports:
+      - "18080:8080"
+    restart: always
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+    depends_on:
+      - kafka
+
+  db:
+    image: mysql:5.7
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db.sql:/docker-entrypoint-initdb.d/db.sql
+    restart: always
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_DATABASE: DBDS
+    
+  
+  db-sla:
+    image: mysql:5.7
+    volumes:
+      - db_sla:/var/lib/mysql
+      - ./db_sla.sql:/docker-entrypoint-initdb.d/db_sla.sql
+    restart: always
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_DATABASE: DBDS3
+  
+  
+  db-sub:
+    image: mysql:5.7
+    volumes:
+      - db_sub:/var/lib/mysql
+      - ./db_sub.sql:/docker-entrypoint-initdb.d/db_sub.sql
+    restart: always
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_DATABASE: DBDS2
+
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: ''
+    depends_on:
+      - db
+  
+  phpmyadmin2:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin2
+    ports:
+      - "8082:80"
+    environment:
+      PMA_HOST: db-sub
+      PMA_USER: root
+      PMA_PASSWORD: ''
+    depends_on:
+      - db-sub
+    
+  phpmyadmin3:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin3
+    ports:
+      - "8083:80"
+    environment:
+      PMA_HOST: db-sla
+      PMA_USER: root
+      PMA_PASSWORD: ''
+    depends_on:
+      - db-sla
+      
+  subscriber:
+    build:
+      context: ./Subscriber
+    ports:
+      - "8001:8001"
+    depends_on:
+      - db-sub
+      - usermanager
+
+  sarima:
+    build:
+      context: ./Sarima
+    ports:
+      - "5555:5555"
+    depends_on:
+      - slamanager
+
+  exporter:
+    build:
+      context: ./Exporter
+    ports:
+      - "2000:2000"
+    depends_on:
+      - subscriber
+      - consumer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    privileged: true
+
+  usermanager:
+    build:
+      context: ./userManager
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+
+  consumer:
+    build:
+      context: ./Consumer
+    depends_on:
+      - create-topic
+      - notifier
+      - producer
+    ports:
+      - "6000:6000"
+
+  notifier:
+    build:
+      context: ./Notifier
+    ports:
+      - "4000:4000"
+    depends_on:
+      - subscriber
+  
+  producer:
+    build:
+      context: ./Producer
+    ports:
+      - "1000:1000"
+    depends_on:
+      - create-topic
+
+  slamanager:
+    build:
+      context: ./Slamanager
+    ports:
+      - "7000:7000"
+    depends_on:
+      - db-sla
+      - exporter
+
+volumes:
+  kafka_data:
+    driver: local
+  db_data: {}
+  db_sub: {}
+  db_sla: {}
+  grafana-storage: {}
+  prometheus-data: {}

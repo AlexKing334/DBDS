@@ -1,0 +1,150 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-configmap
+data:
+  prometheus.yml: |-
+    scrape_configs:
+      - job_name: "prometheus"
+        scheme: https
+        static_configs:
+          - targets: ["exporter:2000"]
+        tls_config:
+          cert_file: /etc/prometheus/tls/cert.pem
+          key_file: /etc/prometheus/tls/key.pem
+          insecure_skip_verify: true
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: prometheus-tls-secret
+type: Opaque
+data:
+  cert.pem: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNtekNDQVlNQ0FnUG9NQTBHQ1NxR1NJYjNEUUVCQ3dVQU1CTXhFVEFQQmdOVkJBTU1DRU52Ym5OMWJXVnkKTUI0WERUSXpNVEl5TURFM016ZzBPVm9YRFRJME1USXhPVEUzTXpnME9Wb3dFekVSTUE4R0ExVUVBd3dJUTI5dQpjM1Z0WlhJd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUURweU03aVk5RXNaUlQxCk9EVFhqTitGQTZOV0IySFpmMDEzWkdPSGRQQ3QrRG41Q2NJMlpJSW4rZEhDb2R2UHEySGxMVm4zMGdBaDlmcE8KQVFhV2Zkbll1VTE1WDFVZmFYanNuUi84dXNTMUx2K09pVWZYM0MwdXBqaXkvemVYUUxJY25yNS9jUXNGVU51Ywp6TGpCQllMYm41YW1tN2ZpV0xEOEVEbVJ3QU9QY09ub25oeG5ZSWs1WmFWK3VWeDNrM3ZDUVAwQUFjeUsrZWcwCjRzQXF1UmkrMkI3VmkxTHVZTEEzQm9xVHFUUGFKZWhIczJkSmQ5QWZ0eFIza09CNjF4SjQyV2YxdzhpZzRzQnAKaG1lR25EOWh4aVZTbWx2TEM3YnFiS1dZMVJ5Tzd2aCtqYm0vckIzV3J0TVYzbHNKSkpreGM1MWlnelNBOFNqbQpwVDdYaWpwdkFnTUJBQUV3RFFZSktvWklodmNOQVFFTEJRQURnZ0VCQUVpczR6QWVUYk1zbkt5NG5SZGRSRjhMCkI5bjYzS202OUoxdTRWa3o5dW9IdTEzRVduRitnM09FOWF6SmM5T3RJNWVZRlRacGhubHJQM2NnNjBGSjZjYkQKL1VkMUxUYTB6aGE1THJpR2JydGlmdXYvWU0wNW9JRHZZcHRHZTlGRlhmSStudHp6dmFRT1FtSSt1RFFCaEtNbwo5blVUNm5mdGZEKzRFeW9PSys1UzBYTHRLbE5RYzlTUy9WcG9LalltOWhTM0UrTS9acjM4Ulg1d2NlNUFHOEgzCjJGWTlhSXdocjNBUjB5Q1ZEOUZpMEp5bnVDYjFtR3VkOTJ4WUpuT0RIa3lTaU56cTVhdUxHVFJrQVlFRXJnY1EKRWcrQUZQV0hvdlN1eGZ2WGI1U3NWazdTaUUyMXBRRmEwbm9nc0pZOUMrdDZPNGFMZG1LNllveWdrS0R0T0JRPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+  key.pem: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRRHB5TTdpWTlFc1pSVDEKT0RUWGpOK0ZBNk5XQjJIWmYwMTNaR09IZFBDdCtEbjVDY0kyWklJbitkSENvZHZQcTJIbExWbjMwZ0FoOWZwTwpBUWFXZmRuWXVVMTVYMVVmYVhqc25SLzh1c1MxTHYrT2lVZlgzQzB1cGppeS96ZVhRTEljbnI1L2NRc0ZVTnVjCnpMakJCWUxibjVhbW03ZmlXTEQ4RURtUndBT1BjT25vbmh4bllJazVaYVYrdVZ4M2szdkNRUDBBQWN5SytlZzAKNHNBcXVSaSsyQjdWaTFMdVlMQTNCb3FUcVRQYUplaEhzMmRKZDlBZnR4UjNrT0I2MXhKNDJXZjF3OGlnNHNCcApobWVHbkQ5aHhpVlNtbHZMQzdicWJLV1kxUnlPN3ZoK2pibS9yQjNXcnRNVjNsc0pKSmt4YzUxaWd6U0E4U2ptCnBUN1hpanB2QWdNQkFBRUNnZ0VBSThhTUNrNzJHcElaWS9GRy9ObGM5ekQ0Vk5qcVcydEV3b21GUlp4YW5IVEoKQWxoQTlTdnFVdzNDME1NT0xUaHYwYTlmL2pHUHZhS3p2QzRpQVBPZlc2LzNzQ1FybFpRQllrd2xNZnF1MFg4dwpzbkpGb1QzYldERXRxZzZ1UmlJclgzL1hiUTh5Zll6REhycWhaMEJkcHhoRDZKa1p5YlNDMlAvdW4yUS81em80CldSL1ZWcFpCNW9WM3VMaTM1WFJ0VWJLMUMxUFlQMVd1MjFOM3REZU9IR3M3NXovR29XeEp2b1JYZERxYTJkM0QKMDVIdGcyQ2xoWE9ybjFGcVdlcHJ4UDB4K0VFRzhqbmE4TjdGWTF6RFZpVzFSMGN5Mmo0OFZZd1NRNzU4cC90MQpCVmtZeTFQSi9KVytiQjhvM1d5MStTUTkveTZHay9JL2Y2YkkrQjlrUVFLQmdRRDc3dlFra1lSYmJpa3BzSkdKClFaMW4vUSs3bzM5THUvT1FDZ3cxbVNKSkszeURsN0FuK2tadndKdUtRSTNkRVREcmsvUGEwb2hkUVJ5Q0NrYXgKYnNaelZ4RVpPT1RjdkplU1lOeEpkNHJ2Q0FMMGRUNm5rZjdJN1ZTeklhYzVJa1A2OWU3RStzVlNOamtkZTFUZwprZkw4U25hY2V0bzE0NDZTUkd3dkwzRkV6d0tCZ1FEdGp0dk8rNnlqRjJWNDNXODBsb1NMSUdWaXpLeDZqTno4CnlMdkRoblFDdEc1Qjl3ZWNrSWNkcG00ZHZkUlMzaE9tMHYrUTBsMkU4SDRienRsZURybTJ0UjZKRFp3SnpUK3cKV2RndmFjSHZqdlViMjI1ODN3c3QzRFNyTFJ2MWZDSS9aVW83Vm0rT09pOGhRQWhYd3NsN2Q0L1oxdUJReFZaegp4SXhQb0loWVlRS0JnQnZ3Y0JydUdHT2JYKzFEcTZBeEtxZXhwT0VHVE1PMVlGbUZBNzJkOGZOell5ZWsxdUJZCkhSK2ZtS0JJY0hNbnlPa1hTMS9sSVVKV1NqY1J0SzFRdjZsaTZuNkZsTHYySGtrWmZOU1k4VXQ0OC9yd1ZiWjMKdG0zS0JDNnBlTVlaU3JpMk5YaWE1dThySEVKc3Z3ajRwcDNjRkROZVhIekZjN1k4NkZLRFRHaDVBb0dBVy9CeQpPY1ZGcDBraXlJaEt4YnVMU0owZElBTytyUjlmVjZZSXBUK2dIbnZlUUVGdS9MVWkxZUxYczBNSXJabXRXVjlICjhiQzQ2UDU2a0NDYUY4RHpOemNadmtrNkhzRUU2U2VjZDUwaXBhaGFUSkc4VFMrMWorWXRyQ0lsTS9qNitEWW4KYUplblRSQlB0VHFtLy9Bdk1rMnZxc3R5dlUvaWlhT0QrajFUQjRFQ2dZRUF4K2wxY2hTQ3djWFhWMHhSWTFFNAoxV0lNWVU3cStvQjhWc1ROMTNHdzRCb0pYQVJGUTNYWXBFaGNXSkMxaUpidXUzbTlSU2RsektQWUlCRVRtSG44CjQ4QXNkRkkxeUdSYTZIN2hJRU9Zam1meWpaaTR0Sm54RlhLSzhpeExoKzB2WGhaNWRiZWdyVlM5Mk9tNjhDRTMKL1RKY0txTkt3ZHNta1pLc1V3MEgrZWc9Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      initContainers:
+      - name: wait-exporter
+        image: busybox:1.31
+        command: ['sh', '-c', 'until nc -zv exporter 2000; do echo "Waiting for exporter"; sleep 5; done;']
+      hostname: prometheus
+      containers:
+      - name: prometheus
+        image: prom/prometheus:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 9090
+        resources:
+          requests:
+            memory: "400Mi"
+            cpu: "200m"
+          limits:
+            memory: "500Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: prometheus-storage
+          mountPath: /prometheus
+        - name: prometheus-tls-secret
+          mountPath: /etc/prometheus/tls
+          readOnly: true
+        - name: prometheus-config  
+          mountPath: /etc/prometheus/prometheus.yml
+          subPath: prometheus.yml
+      volumes:
+      - name: prometheus-storage
+        persistentVolumeClaim:
+          claimName: prometheus-storage
+      - name: prometheus-tls-secret
+        secret:
+          secretName: prometheus-tls-secret
+      - name: prometheus-config
+        configMap:
+          name: prometheus-configmap
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+spec:
+  selector:
+    app: prometheus
+  ports:
+    - port: 9090
+      targetPort: 9090
+      nodePort: 30030
+  type: NodePort
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      initContainers:
+      - name: wait-prometheus
+        image: busybox:1.31
+        command: ['sh', '-c', 'until nc -zv prometheus 9090; do echo "Waiting for exporter"; sleep 5; done;']
+      containers:
+      - name: grafana
+        image: progetto-grafana
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+spec:
+  selector:
+    app: grafana
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30050
+  type: NodePort
+
